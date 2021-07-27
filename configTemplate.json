@@ -1,0 +1,8 @@
+{
+  "hisqis_Datei": "prf_251301_20211_1.xls",
+  "eigene_Datei": "Final Grades.xlsx",
+  "noten_Spalte": "Final grade",
+  "noten_mal_100_nehmen": 1,
+  "prüfungs_datum": "Date of hand in",
+  "was_tun_wenn_matrikelnr_nicht_überein_stimmen": "stop"
+}
