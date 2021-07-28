@@ -1,4 +1,7 @@
 import json
+import os
+import subprocess
+
 import pandas as pandas
 import openpyxl
 import xlwt
@@ -375,6 +378,12 @@ if __name__ == '__main__':
 
     print("\n" + "FERTIG!")
     print("Sie können die Datei \"" + target_file + "\" jetzt auf HisQis hochladen.")
+    print("\n")
+
+    do_open_file = get_input_int("Datei zur Kontrolle öffnen? [1 = ja, 0 = nein]", [0, 1])
+
+    if do_open_file == 1:
+        os.startfile(target_file)
 
     pass
 
