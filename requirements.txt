@@ -1,0 +1,7 @@
+pandas
+numpy
+xlwt
+xlutils
+xlrd
+easygui
+python_dateutil
