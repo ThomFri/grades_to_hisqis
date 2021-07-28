@@ -1,6 +1,7 @@
 import json
 import pandas as pandas
 import openpyxl
+import xlwt
 from xlrd import open_workbook
 from os import listdir
 from os.path import isfile, join
@@ -10,6 +11,7 @@ import numpy as np
 from shutil import copyfile
 import xlsxwriter
 from xlutils.copy import copy
+import math
 
 #https://stackoverflow.com/questions/11348347/find-non-common-elements-in-lists ==> .difference()
 
@@ -35,17 +37,17 @@ def find_in_workbook(wb, needle, skiprows=0):
     return result
 
 def get_input_int(text, range=None):
-    print(text + "", end="")
+    print("" + str(text) + " ")
     result = input()
     while True:
         if not result.isnumeric():
-            print("Eingabe ist keine (nicht negative) Zahl, bitte korrigieren!", end="")
+            print("Eingabe ist keine (nicht negative) Zahl, bitte korrigieren!")
             result = input()
         else:
             result = int(result)
             if not range is None:
                 if not result in range:
-                    print("Eingabe ist nicht im Bereich von " + range_edges_to_string(range) + ", bitte korrigieren!", end="")
+                    print("Eingabe ist nicht im Bereich von " + range_edges_to_string(range) + ", bitte korrigieren!")
                     result = input()
                 else:
                     break
@@ -59,6 +61,9 @@ def list_to_string_with_leading_index(list, start=0):
     for item in list:
         result += str(start) + "\t" + str(item) + "\n"
         start += 1
+
+    result = result[:len(result)-1]
+
     return result
 
 def join_non_strings(join_string, iteratable):
@@ -86,12 +91,13 @@ def range_edges_to_string(range):
     result = "["+str(min)+", "+str(max)+"]"
     return result
 
-def file_selector(text, path="."):
+def file_selector(text, path=".", show_files=True):
     result = None
 
     files_in_path = [f for f in listdir(path) if isfile(join(path, f))]
     files_in_path.append("<<Keine hiervon>>")
-    print("Dateien im Verzeichnis \"" + path + "\": \n" + list_to_string_with_leading_index(files_in_path))
+    if show_files:
+        print("Dateien im Verzeichnis \"" + path + "\": \n" + list_to_string_with_leading_index(files_in_path) + "\n")
 
     while True:
         file_index = get_input_int(text, range(len(files_in_path)))
@@ -141,12 +147,16 @@ if __name__ == '__main__':
     hq_matrnr_set = set(hq_df[hq_index_col])
 
 
-    own_file = file_selector("Bitte Nummer (links) der eigenen Datei angeben:")
+    own_file = file_selector("Bitte Nummer (links) der eigenen Datei angeben:", show_files=False)
     own_df = pandas.read_excel(own_file, header=None)
+    print("\n\n")
+
+
     print(own_df.head(10))
 
+    print("\n")
     skip_rows_own = get_input_int("Bei welcher Zeilenzahl (links) beginnt Ihre Tabelle bzw. wo befindet sich der Tabellenkopf?")
-    print("\n\n")
+    print("\n")
 
     own_df = pandas.read_excel(own_file, skiprows=skip_rows_own)
     print("Die Tabelle enhält folgende Spalten:")
@@ -174,16 +184,19 @@ if __name__ == '__main__':
 
         if special == "col/fixed":
             special_input = get_input_int("Hat Ihre Tabelle eine \"" + req_cols[req_col]["name"] + "\"-Spalte? [1 = ja, 0 = nein]", [0,1])
+            print("\n")
 
             if int(special_input) == 0:
                 ask_col = False
 
-                print("Bitte geben Sie den Festwert für \"" + req_cols[req_col]["name"] + "\" ein:", end="")
+                print("Bitte geben Sie den Festwert für \"" + req_cols[req_col]["name"] + "\" ein:")
+                print("\n")
                 own_cols[req_col] = req_col
                 fixed_values[req_col] = input()
 
         if ask_col:
             col_index = get_input_int("Was ist die Nummer (links) Ihrer \"" + req_cols[req_col]["name"] + "\"-Spalte?", range(len(own_df.columns)))
+            print("\n")
             own_cols[req_col] = own_df.columns[col_index]
 
 
@@ -206,6 +219,7 @@ if __name__ == '__main__':
     set_diff = hq_matrnr_set ^ own_matrnr_set
 
     if not len(set_diff) == 0:
+        print("\n\n")
         print("WARNUNG!!!")
         print("Matrikelnummern stimmen nicht überein!")
 
@@ -215,43 +229,74 @@ if __name__ == '__main__':
         add_own = own_matrnr_set - hq_matrnr_set
         print("Zusätzliche in eigener Datei: " + join_non_strings(", ",add_own))
 
+        print("WARNUNG!!!")
+        print("\n")
+
         ignore_options = [
             "Nur die Matr.-Nr. der HisQis-Datei berücksichtigen",
             "Nur die Matr.-Nr. der eigenen Datei berücksichtigen",
+            "Nur die Matr.-Nr. berücksichtigen, die in beiden Dateien enthalten sind",
             "Die Matr.-Nr. aus beiden Datei berücksichtigen",
         ]
         do_ignore = get_input_int("Wie soll hiermit verfahren werden?" + "\n" +
                                   list_to_string_with_leading_index(ignore_options),
-                                  range(3)
+                                  range(len(ignore_options))
                                   )
 
-        if do_ignore == 0:
+        if do_ignore == 0 or do_ignore == 2:
             clean_dataframe(own_df, "mtknr", add_own)
-        elif do_ignore == 1:
+        if do_ignore == 1 or do_ignore == 2:
             clean_dataframe(hq_df, "mtknr", add_hq)
-        elif do_ignore == 2:
-            pass
 
-    print("Merging data...")
+    print("\n" + "Daten abgleichen..." + "\n")
     original_header = hq_df.columns
     hq_df.drop(columns=["bewertung", "pdatum"], inplace=True)
     own_df = own_df[["mtknr", "bewertung", "pdatum"]]
     merged_dataframe = pandas.merge(hq_df, own_df, on="mtknr", how="outer")
     merged_dataframe = merged_dataframe[original_header]
 
-    grade_mean = merged_dataframe["bewertung"].mean()
+    merged_dataframe["bewertung"] = merged_dataframe["bewertung"].apply(
+        lambda x: x.upper()
+        if isinstance(x,str)
+        else x
+    )
+
+    grade_mean = pandas.to_numeric(merged_dataframe["bewertung"], errors='coerce').mean()
     if grade_mean < 6:
         #needs multiplication!
-        merged_dataframe["bewertung"] = merged_dataframe["bewertung"]*100
-    merged_dataframe["bewertung"].replace(np.nan, 'KNA', regex=True)
+        merged_dataframe["bewertung"] = merged_dataframe["bewertung"].apply(
+            lambda x: x*100
+            if not isinstance(x,str)
+            else x
+        )
+
+    bewertung_contains_nan = (merged_dataframe["bewertung"].isnull().sum() > 0)
+
+    if bewertung_contains_nan:
+        bewertung_options = [
+            "Ignorieren",
+            "Durch \"NAN\" ersetzen",
+            "Durch \"KNA\" ersetzen"
+        ]
+        do_bewertung = get_input_int("\"bewertung\"-Spalte enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
+                                     list_to_string_with_leading_index(bewertung_options),
+                                     range(len(bewertung_options))
+                                     )
+        print("\n")
+
+        if do_bewertung == 1:
+            merged_dataframe["bewertung"].replace(np.nan, 'NAN', regex=True, inplace=True)
+        elif do_bewertung == 2:
+            merged_dataframe["bewertung"].replace(np.nan, 'KNA', regex=True, inplace=True)
 
     merged_dataframe["pdatum"] = merged_dataframe["pdatum"].apply(
         lambda x: dateutil.parser.parse(str(x)).strftime("%d.%m.%Y")
-        if (np.all(pandas.notnull(x))) else x
+        if (np.all(pandas.notnull(x)))
+        else x
     )
 
-    do_target = get_input_int("Ergebnis direkt in HisQis-Datei schreiben? [1 = ja, 2 = nein, Kopie anlegen]")
-    if do_target == 2:
+    do_target = get_input_int("Ergebnis direkt in HisQis-Datei schreiben? [1 = ja, 0 = nein, Kopie anlegen]", [0,1])
+    if do_target == 0:
         last_dot = hq_file.rfind('.')
         target_file = hq_file[:last_dot] + "_upload" + hq_file[last_dot:]
         copyfile(hq_file, target_file)
@@ -260,13 +305,18 @@ if __name__ == '__main__':
 
 
     write_start = tab_corners["start"][0]["row"] + 1
-    write_end = write_start + len(merged_dataframe)
+    write_end_row = write_start + len(merged_dataframe) + 3
+    write_end_col = tab_corners["end"][0]["col"] + 1
 
     target_wb_tmp = open_workbook(target_file, formatting_info=True)
     target_sheet_tmp = target_wb_tmp.sheet_by_index(0)
     target_wb = copy(target_wb_tmp)
     target_sheet = target_wb.get_sheet(0)
-
+    nan_format = xlwt.XFStyle()
+    nan_pattern = xlwt.Pattern()
+    nan_pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    nan_pattern.pattern_fore_colour = xlwt.Style.colour_map['yellow']
+    nan_format.pattern = nan_pattern
 
     row_i = write_start
     #for col, val in enumerate(merged_dataframe.columns, start=0):
@@ -275,16 +325,20 @@ if __name__ == '__main__':
 
     for index, row_content in merged_dataframe.iterrows():
         for col, val in enumerate(row_content, start=0):
-            if val is np.nan:
-                target_sheet.write(row_i, col)
+            if isinstance(val, float) and math.isnan(val):
+                target_sheet.write(row_i, col, style=nan_format)
             else:
                 target_sheet.write(row_i, col, val)
         row_i += 1
-    target_sheet.write(row_i, 0,"endHISsheet")
 
-    if write_end > row_i:
-        for row_i in range(row_i, write_end):
-            target_sheet.write(row_i, 0)
+    real_end = row_i
+
+    if write_end_row > row_i:
+        for row_i in range(row_i, write_end_row):
+            for col_i in range(0, write_end_col):
+                target_sheet.write(row_i, col_i)
+
+    target_sheet.write(real_end, 0, "endHISsheet")
 
     target_wb.save(target_file)
 
@@ -312,6 +366,9 @@ if __name__ == '__main__':
     #         target_sheet.write(row_i, 0, None)
     #
     # target_wb.close()
+
+    print("\n" + "FERTIG!")
+    print("Sie können die Datei \"" + target_file + "\" jetzt auf HisQis hochladen.")
 
     pass
 
