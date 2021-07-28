@@ -9,6 +9,7 @@ from datetime import datetime
 import numpy as np
 from shutil import copyfile
 import xlsxwriter
+from xlutils.copy import copy
 
 #https://stackoverflow.com/questions/11348347/find-non-common-elements-in-lists ==> .difference()
 
@@ -261,49 +262,56 @@ if __name__ == '__main__':
     write_start = tab_corners["start"][0]["row"] + 1
     write_end = write_start + len(merged_dataframe)
 
-    # target_wb = openpyxl.Workbook()
-    # target_sheet = target_wb.worksheets[0]
-    #
-    # row_i = write_start
-    # for col, val in enumerate(merged_dataframe.columns, start=1):
-    #     target_sheet.cell(row=row_i, column=col).value = val
-    #
-    # row_i += 1
-    # for index, row_content in merged_dataframe.iterrows():
-    #     for col, val in enumerate(row_content, start=1):
-    #         target_sheet.cell(row=row_i, column=col).value = val
-    #     row_i += 1
-    # target_sheet.cell(row_i, 1).value = "endHISsheet"
-    #
-    # if write_end > row_i:
-    #     for row_i in range(row_i, write_end):
-    #         target_sheet.cell(row=row_i, column=1).value = None
-    #
-    # target_wb.save(target_file)
+    target_wb_tmp = open_workbook(target_file, formatting_info=True)
+    target_sheet_tmp = target_wb_tmp.sheet_by_index(0)
+    target_wb = copy(target_wb_tmp)
+    target_sheet = target_wb.get_sheet(0)
 
-    target_sheet = open_workbook(target_file).sheets()[0]
-    row_i = 0
-    precols = []
-    for row_i in range(0, write_start):
-        precols.append(target_sheet.row_values(row_i))
-
-
-    target_wb = xlsxwriter.Workbook(target_file)
-    target_sheet = target_wb.add_worksheet("First Sheet")
 
     row_i = write_start
-    target_sheet.write_row(row_i, 0, merged_dataframe.columns)
-    row_i +=  1
+    #for col, val in enumerate(merged_dataframe.columns, start=0):
+    #    target_sheet.write(row_i, col, val)
+    row_i += 1
+
     for index, row_content in merged_dataframe.iterrows():
-        target_sheet.write_row(row_i, 0, row_content)
+        for col, val in enumerate(row_content, start=0):
+            if val is np.nan:
+                target_sheet.write(row_i, col)
+            else:
+                target_sheet.write(row_i, col, val)
         row_i += 1
-    target_sheet.write(row_i, 0, "endHISsheet")
+    target_sheet.write(row_i, 0,"endHISsheet")
 
     if write_end > row_i:
         for row_i in range(row_i, write_end):
-            target_sheet.write(row_i, 0, None)
+            target_sheet.write(row_i, 0)
 
-    target_wb.close()
+    target_wb.save(target_file)
+
+    #
+    # target_sheet = open_workbook(target_file).sheets()[0]
+    # row_i = 0
+    # precols = []
+    # for row_i in range(0, write_start):
+    #     precols.append(target_sheet.row_values(row_i))
+    #
+    #
+    # target_wb = xlsxwriter.Workbook(target_file)
+    # target_sheet = target_wb.add_worksheet("First Sheet")
+    #
+    # row_i = write_start
+    # target_sheet.write_row(row_i, 0, merged_dataframe.columns)
+    # row_i +=  1
+    # for index, row_content in merged_dataframe.iterrows():
+    #     target_sheet.write_row(row_i, 0, row_content)
+    #     row_i += 1
+    # target_sheet.write(row_i, 0, "endHISsheet")
+    #
+    # if write_end > row_i:
+    #     for row_i in range(row_i, write_end):
+    #         target_sheet.write(row_i, 0, None)
+    #
+    # target_wb.close()
 
     pass
 
