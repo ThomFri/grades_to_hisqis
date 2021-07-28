@@ -16,7 +16,9 @@ import xlsxwriter
 from xlutils.copy import copy
 import math
 from enum import Enum
-
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename, asksaveasfilename
+import easygui
 
 #gui
 #https://stackoverflow.com/questions/45441885/how-can-i-create-a-dropdown-menu-from-a-list-in-tkinter
@@ -61,6 +63,9 @@ req_cols = {
         }
     }
 
+use_tkinter = False
+use_easygui = True
+use_file_picker = True
 
 def find_in_workbook(wb, needle, skiprows=0):
     result = []
@@ -132,26 +137,47 @@ def range_edges_to_string(range):
     result = "["+str(min)+", "+str(max)+"]"
     return result
 
-def file_selector(text, path=".", show_files=True):
+def file_selector(text, path=".", show_files=True, gui=use_file_picker):
     result = None
 
-    files_in_path = [f for f in listdir(path) if isfile(join(path, f))]
-    files_in_path.append("<<Keine hiervon>>")
-    if show_files:
-        print("Dateien im Verzeichnis \"" + path + "\": \n" + list_to_string_with_leading_index(files_in_path) + "\n")
-
     while True:
-        file_index = get_input_int(text, range(len(files_in_path)))
-        if file_index == len(files_in_path) - 1:
-            print("Geben Sie den gesamten Dateipfand an:")
-            result = input()
-        else:
-            result = files_in_path[file_index]
+        if use_file_picker:
+            print(text)
+            print("<<ENTER-Taste drücken um Dialog zu öffnen>>")
+            tmp = input()
 
-        if not isfile(result):
-            print("Ungültiger Pfad!")
+
+            if use_tkinter:
+                # input_types = [('xls', '*.xls'), ('xlsx', '*.xlsx')]
+                result = askopenfilename(title=text)
+            if use_easygui:
+                input_types = [["*.xls", "*.xlsx", "Excel Datei"]]
+                result = easygui.fileopenbox(title=text, filetypes=input_types, multiple=False)
+
+
         else:
+            files_in_path = [f for f in listdir(path) if isfile(join(path, f))]
+            files_in_path.append("<<Keine hiervon>>")
+            if show_files:
+                print("Dateien im Verzeichnis \"" + path + "\": \n" + list_to_string_with_leading_index(files_in_path) + "\n")
+
+            while True:
+                file_index = get_input_int(text + " [Nummer auf der linken Seite!]:", range(len(files_in_path)))
+                if file_index == len(files_in_path) - 1:
+                    print("Geben Sie den gesamten Dateipfand an:")
+                    result = input()
+                else:
+                    result = files_in_path[file_index]
+
+                if not isfile(result):
+                    print("Ungültiger Pfad!")
+                else:
+                    break
+
+        if not result is None and isfile(result):
             break
+        else:
+            print("Keine gültige Datei gewählt!")
 
     return result
 
@@ -161,10 +187,18 @@ def clean_dataframe(df, cleaing_col, cleaning_set):
     df.drop(to_delte, inplace=True)
     df.reset_index(drop=True, inplace=True)
 
-
 if __name__ == '__main__':
+    print(
+        "╔══════════════════════════╗" + "\n"
+        "║  GRADES ==TO==> HISQIS   ║" + "\n"
+        "╚══════════════════════════╝" + "\n\n\n"
+    )
 
-    hq_file = file_selector("Bitte Nummer (links) der HisQis-Datei angeben:")
+    if use_tkinter:
+        gui = Tk()
+        gui.withdraw()
+
+    hq_file = file_selector("Bitte HisQis-Datei auswählen")
     print("\n")
     hq_wb = open_workbook(hq_file)
     tab_corners = {}
@@ -188,7 +222,7 @@ if __name__ == '__main__':
     hq_matrnr_set = set(hq_df[hq_index_col])
 
 
-    own_file = file_selector("Bitte Nummer (links) der eigenen Datei angeben:", show_files=False)
+    own_file = file_selector("Bitte eigene Datei auswählen", show_files=False)
     own_df = pandas.read_excel(own_file, header=None)
     print("\n\n")
 
@@ -269,7 +303,7 @@ if __name__ == '__main__':
             "Nur die Matr.-Nr. der HisQis-Datei berücksichtigen",
             "Nur die Matr.-Nr. der eigenen Datei berücksichtigen",
             "Nur die Matr.-Nr. berücksichtigen, die in beiden Dateien enthalten sind",
-            "Die Matr.-Nr. aus beiden Datei berücksichtigen",
+            "Die Matr.-Nr. aus beiden Dateien berücksichtigen",
         ]
         do_ignore = get_input_int("Wie soll hiermit verfahren werden?" + "\n" +
                                   list_to_string_with_leading_index(ignore_options),
@@ -332,7 +366,20 @@ if __name__ == '__main__':
     if do_target == 0:
         last_dot = hq_file.rfind('.')
         target_file = hq_file[:last_dot] + "_upload" + hq_file[last_dot:]
+
+        if use_file_picker:
+            if use_tkinter:
+                save_types = [('xls', '*.xls')]
+                target_file = asksaveasfilename(title="Upload-Datei speichern unter...", filetypes=save_types, defaultextension=save_types, initialfile=target_file)
+            if use_easygui:
+                save_types = [["*.xls", "Excel Datei"]]
+                target_file = easygui.filesavebox(title="Upload-Datei speichern unter...", filetypes=save_types, default=target_file)
+
+        else:
+            pass
+
         copyfile(hq_file, target_file)
+
     else:
         target_file = hq_file
 
