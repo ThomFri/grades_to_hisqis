@@ -12,14 +12,52 @@ from shutil import copyfile
 import xlsxwriter
 from xlutils.copy import copy
 import math
+from enum import Enum
 
-#https://stackoverflow.com/questions/11348347/find-non-common-elements-in-lists ==> .difference()
 
 #gui
 #https://stackoverflow.com/questions/45441885/how-can-i-create-a-dropdown-menu-from-a-list-in-tkinter
 #https://www.delftstack.com/de/howto/python-tkinter/how-to-create-dropdown-menu-in-tkinter/
 #https://docs.python.org/3/library/dialog.html
 #https://pythonbasics.org/tkinter-filedialog/
+
+
+# headers etc.
+class Hdrs(Enum):
+    MNR = "mtknr"
+    ABS = "abschl"
+    STG = "stg"
+    NNA = "nachname"
+    VNA = "vorname"
+    BEW = "bewertung"
+    PDA = "pdatum"
+    RES = "res1"
+    PST = "pstatus"
+    POR = "pordnr"
+    LNR = "labnr"
+
+class Grd(Enum):
+    NAN = "NAN"
+    KAN = "KAN"
+
+class Edg(Enum):
+    START = "startHISsheet"
+    END = "endHISsheet"
+
+key = Hdrs.MNR
+req_cols = {
+        Hdrs.MNR: {
+            "name": "Matr.Nr."
+        },
+        Hdrs.BEW: {
+            "name": "Bewertung"
+        },
+        Hdrs.PDA: {
+            "name": "Prüfungsdatum",
+            "special": "col/fixed"
+        }
+    }
+
 
 def find_in_workbook(wb, needle, skiprows=0):
     result = []
@@ -127,15 +165,15 @@ if __name__ == '__main__':
     print("\n")
     hq_wb = open_workbook(hq_file)
     tab_corners = {}
-    tab_corners["start"] = find_in_workbook(hq_wb, "startHISsheet", skiprows=0)
-    tab_corners["end"] = find_in_workbook(hq_wb, "endHISsheet", skiprows=0)
+    tab_corners["start"] = find_in_workbook(hq_wb, Edg.START.value, skiprows=0)
+    tab_corners["end"] = find_in_workbook(hq_wb, Edg.END.value, skiprows=0)
 
 
     skip_rows_till_tab = tab_corners["start"][0]["row"] + 1
     table_length = tab_corners["end"][1]["row"] - skip_rows_till_tab - 1
     hq_df = pandas.read_excel(hq_file, skiprows=skip_rows_till_tab, nrows=table_length)
 
-    hq_key_name = "mtknr"
+    hq_key_name = key.value
     hq_default_key_col = 0
     if hq_key_name in hq_df.head():
         hq_df.set_index(hq_key_name)
@@ -164,18 +202,6 @@ if __name__ == '__main__':
     print("\n")
 
     own_cols = {}
-    req_cols = {
-        "mtknr": {
-            "name": "Matr.Nr."
-        },
-        "bewertung": {
-            "name": "Bewertung"
-        },
-        "pdatum": {
-            "name": "Prüfungsdatum",
-            "special": "col/fixed"
-        }
-    }
     fixed_values = {}
 
     for req_col in req_cols:
@@ -189,10 +215,11 @@ if __name__ == '__main__':
             if int(special_input) == 0:
                 ask_col = False
 
-                print("Bitte geben Sie den Festwert für \"" + req_cols[req_col]["name"] + "\" ein:")
-                print("\n")
                 own_cols[req_col] = req_col
+
+                print("Bitte geben Sie den Festwert für \"" + req_cols[req_col]["name"] + "\" ein:")
                 fixed_values[req_col] = input()
+                print("\n")
 
         if ask_col:
             col_index = get_input_int("Was ist die Nummer (links) Ihrer \"" + req_cols[req_col]["name"] + "\"-Spalte?", range(len(own_df.columns)))
@@ -208,14 +235,17 @@ if __name__ == '__main__':
     own_df = pandas.read_excel(own_file, skiprows=skip_rows_own, nrows=nrows_own)
 
     #renaming own_df
-    inverted_own_cols = {v: k for k, v in own_cols.items()}
+    inverted_own_cols = {}
+    for k, v in own_cols.items():
+        inverted_own_cols[v] = k.value
+
     own_df = own_df.rename(columns=inverted_own_cols)
-    own_df.set_index("mtknr")
-    if "pdatum" in fixed_values:
-        own_df["pdatum"] = fixed_values["pdatum"]
+    own_df.set_index(key.value)
+    if Hdrs.PDA in fixed_values:
+        own_df[Hdrs.PDA.value] = fixed_values[Hdrs.PDA]
 
 
-    own_matrnr_set = set(own_df["mtknr"])
+    own_matrnr_set = set(own_df[key.value])
     set_diff = hq_matrnr_set ^ own_matrnr_set
 
     if not len(set_diff) == 0:
@@ -244,39 +274,39 @@ if __name__ == '__main__':
                                   )
 
         if do_ignore == 0 or do_ignore == 2:
-            clean_dataframe(own_df, "mtknr", add_own)
+            clean_dataframe(own_df, key.value, add_own)
         if do_ignore == 1 or do_ignore == 2:
-            clean_dataframe(hq_df, "mtknr", add_hq)
+            clean_dataframe(hq_df, key.value, add_hq)
 
     print("\n" + "Daten abgleichen..." + "\n")
     original_header = hq_df.columns
-    hq_df.drop(columns=["bewertung", "pdatum"], inplace=True)
-    own_df = own_df[["mtknr", "bewertung", "pdatum"]]
-    merged_dataframe = pandas.merge(hq_df, own_df, on="mtknr", how="outer")
+    hq_df.drop(columns=[Hdrs.BEW.value, Hdrs.PDA.value], inplace=True)
+    own_df = own_df[[key.value, Hdrs.BEW.value, Hdrs.PDA.value]]
+    merged_dataframe = pandas.merge(hq_df, own_df, on=key.value, how="outer")
     merged_dataframe = merged_dataframe[original_header]
 
-    merged_dataframe["bewertung"] = merged_dataframe["bewertung"].apply(
+    merged_dataframe[Hdrs.BEW.value] = merged_dataframe[Hdrs.BEW.value].apply(
         lambda x: x.upper()
         if isinstance(x,str)
         else x
     )
 
-    grade_mean = pandas.to_numeric(merged_dataframe["bewertung"], errors='coerce').mean()
+    grade_mean = pandas.to_numeric(merged_dataframe[Hdrs.BEW.value], errors='coerce').mean()
     if grade_mean < 6:
         #needs multiplication!
-        merged_dataframe["bewertung"] = merged_dataframe["bewertung"].apply(
+        merged_dataframe[Hdrs.BEW.value] = merged_dataframe[Hdrs.BEW.value].apply(
             lambda x: x*100
             if not isinstance(x,str)
             else x
         )
 
-    bewertung_contains_nan = (merged_dataframe["bewertung"].isnull().sum() > 0)
+    bewertung_contains_nan = (merged_dataframe[Hdrs.BEW.value].isnull().sum() > 0)
 
     if bewertung_contains_nan:
         bewertung_options = [
             "Ignorieren",
-            "Durch \"NAN\" ersetzen",
-            "Durch \"KNA\" ersetzen"
+            "Durch \""+Grd.NAN.value+"\" ersetzen",
+            "Durch \""+Grd.KAN.value+"\" ersetzen"
         ]
         do_bewertung = get_input_int("\"bewertung\"-Spalte enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
                                      list_to_string_with_leading_index(bewertung_options),
@@ -285,11 +315,11 @@ if __name__ == '__main__':
         print("\n")
 
         if do_bewertung == 1:
-            merged_dataframe["bewertung"].replace(np.nan, 'NAN', regex=True, inplace=True)
+            merged_dataframe[Hdrs.BEW.value].replace(np.nan, Grd.NAN.value, regex=True, inplace=True)
         elif do_bewertung == 2:
-            merged_dataframe["bewertung"].replace(np.nan, 'KNA', regex=True, inplace=True)
+            merged_dataframe[Hdrs.BEW.value].replace(np.nan, Grd.KAN.value, regex=True, inplace=True)
 
-    merged_dataframe["pdatum"] = merged_dataframe["pdatum"].apply(
+    merged_dataframe[Hdrs.PDA.value] = merged_dataframe[Hdrs.PDA.value].apply(
         lambda x: dateutil.parser.parse(str(x)).strftime("%d.%m.%Y")
         if (np.all(pandas.notnull(x)))
         else x
@@ -331,41 +361,17 @@ if __name__ == '__main__':
                 target_sheet.write(row_i, col, val)
         row_i += 1
 
-    real_end = row_i
+    real_end_row = row_i
+    real_end_col = tab_corners["start"][0]["col"]
 
     if write_end_row > row_i:
         for row_i in range(row_i, write_end_row):
             for col_i in range(0, write_end_col):
                 target_sheet.write(row_i, col_i)
 
-    target_sheet.write(real_end, 0, "endHISsheet")
+    target_sheet.write(real_end_row, real_end_col, Edg.END.value)
 
     target_wb.save(target_file)
-
-    #
-    # target_sheet = open_workbook(target_file).sheets()[0]
-    # row_i = 0
-    # precols = []
-    # for row_i in range(0, write_start):
-    #     precols.append(target_sheet.row_values(row_i))
-    #
-    #
-    # target_wb = xlsxwriter.Workbook(target_file)
-    # target_sheet = target_wb.add_worksheet("First Sheet")
-    #
-    # row_i = write_start
-    # target_sheet.write_row(row_i, 0, merged_dataframe.columns)
-    # row_i +=  1
-    # for index, row_content in merged_dataframe.iterrows():
-    #     target_sheet.write_row(row_i, 0, row_content)
-    #     row_i += 1
-    # target_sheet.write(row_i, 0, "endHISsheet")
-    #
-    # if write_end > row_i:
-    #     for row_i in range(row_i, write_end):
-    #         target_sheet.write(row_i, 0, None)
-    #
-    # target_wb.close()
 
     print("\n" + "FERTIG!")
     print("Sie können die Datei \"" + target_file + "\" jetzt auf HisQis hochladen.")
