@@ -286,17 +286,18 @@ if __name__ == '__main__':
     set_diff = hq_matrnr_set ^ own_matrnr_set
 
     if not len(set_diff) == 0:
-        print("\n\n")
-        print("WARNUNG!!!")
-        print("Matrikelnummern stimmen nicht überein!")
-
         add_hq = hq_matrnr_set - own_matrnr_set
-        print("Zusätzliche in HisQis-Datei: " + join_non_strings(", ",add_hq))
-
         add_own = own_matrnr_set - hq_matrnr_set
-        print("Zusätzliche in eigener Datei: " + join_non_strings(", ",add_own))
 
-        print("WARNUNG!!!")
+        print("\n\n")
+        print("╔══════════════════════════════════════════════════════════════════════╗")
+        print("║ WARNUNG!!!                                                           ║")
+        print("║ ----------                                                           ║")
+        print("║ Matrikelnummern stimmen nicht überein!                               ║")
+        print("║                                                                      ║")
+        print("║ Zusätzliche in HisQis-Datei: " + join_non_strings(", ",add_hq))
+        print("║ Zusätzliche in eigener Datei: " + join_non_strings(", ",add_own))
+        print("╚══════════════════════════════════════════════════════════════════════╝")
         print("\n")
 
         ignore_options = [
