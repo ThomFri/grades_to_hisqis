@@ -286,17 +286,18 @@ if __name__ == '__main__':
     set_diff = hq_matrnr_set ^ own_matrnr_set
 
     if not len(set_diff) == 0:
-        print("\n\n")
-        print("WARNUNG!!!")
-        print("Matrikelnummern stimmen nicht überein!")
-
         add_hq = hq_matrnr_set - own_matrnr_set
-        print("Zusätzliche in HisQis-Datei: " + join_non_strings(", ",add_hq))
-
         add_own = own_matrnr_set - hq_matrnr_set
-        print("Zusätzliche in eigener Datei: " + join_non_strings(", ",add_own))
 
-        print("WARNUNG!!!")
+        print("\n\n")
+        print("╔══════════════════════════════════════════════════════════════════════╗")
+        print("║ WARNUNG!!!                                                           ║")
+        print("║ ----------                                                           ║")
+        print("║ Matrikelnummern stimmen nicht überein!                               ║")
+        print("║                                                                      ║")
+        print("║ Zusätzliche in HisQis-Datei: " + join_non_strings(", ",add_hq))
+        print("║ Zusätzliche in eigener Datei: " + join_non_strings(", ",add_own))
+        print("╚══════════════════════════════════════════════════════════════════════╝")
         print("\n")
 
         ignore_options = [
@@ -304,16 +305,45 @@ if __name__ == '__main__':
             "Nur die Matr.-Nr. der eigenen Datei berücksichtigen",
             "Nur die Matr.-Nr. berücksichtigen, die in beiden Dateien enthalten sind",
             "Die Matr.-Nr. aus beiden Dateien berücksichtigen",
+            "Mehr Details anzeigen"
         ]
-        do_ignore = get_input_int("Wie soll hiermit verfahren werden?" + "\n" +
-                                  list_to_string_with_leading_index(ignore_options),
-                                  range(len(ignore_options))
-                                  )
 
-        if do_ignore == 0 or do_ignore == 2:
-            clean_dataframe(own_df, key.value, add_own)
-        if do_ignore == 1 or do_ignore == 2:
-            clean_dataframe(hq_df, key.value, add_hq)
+        while True:
+            do_loop = False
+            do_ignore = get_input_int("Wie soll hiermit verfahren werden?" + "\n" +
+                                      list_to_string_with_leading_index(ignore_options),
+                                      range(len(ignore_options))
+                                      )
+
+            if do_ignore == 0 or do_ignore == 2:
+                clean_dataframe(own_df, key.value, add_own)
+            if do_ignore == 1 or do_ignore == 2:
+                clean_dataframe(hq_df, key.value, add_hq)
+            if do_ignore == 4:
+                print("\n\n")
+
+                print("Zusätzlich in HisQis-Datei:")
+                print("===========================")
+                if len(add_hq) > 0:
+                    print(hq_df[hq_df[key.value].isin(add_hq)].head())
+                else:
+                    print("Keine zusätzlichen Daten")
+
+                print("\n\n")
+
+                print("Zusätzlich in eigener Datei:")
+                print("============================")
+                if len(add_own) > 0:
+                    print(own_df[own_df[key.value].isin(add_own)].head())
+                else:
+                    print("Keine zusätzlichen Daten")
+
+                print("\n\n")
+
+                do_loop = True
+
+            if not do_loop:
+                break
 
     print("\n" + "Daten abgleichen..." + "\n")
     original_header = hq_df.columns
