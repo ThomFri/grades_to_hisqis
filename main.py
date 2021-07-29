@@ -6,6 +6,7 @@ import pandas as pandas
 #import openpyxl
 import xlwt
 from xlrd import open_workbook
+from openpyxl import load_workbook
 from os import listdir
 from os.path import isfile, join
 import dateutil.parser
@@ -65,7 +66,7 @@ req_cols = {
 
 use_tkinter = False
 use_easygui = True
-use_file_picker = True
+use_file_picker = False
 
 def find_in_workbook(wb, needle, skiprows=0):
     result = []
@@ -151,7 +152,7 @@ def file_selector(text, path=".", show_files=True, gui=use_file_picker):
                 # input_types = [('xls', '*.xls'), ('xlsx', '*.xlsx')]
                 result = askopenfilename(title=text)
             if use_easygui:
-                input_types = [["*.xls", "*.xlsx", "Excel Datei"]]
+                input_types = [["*.xls", "*.xlsx", "*.xlsm", "Excel Datei"]]
                 result = easygui.fileopenbox(title=text, filetypes=input_types, multiple=False)
 
 
@@ -223,7 +224,18 @@ if __name__ == '__main__':
 
 
     own_file = file_selector("Bitte eigene Datei auswählen", show_files=False)
-    own_df = pandas.read_excel(own_file, header=None)
+    own_wb = load_workbook(own_file)
+    own_wb_sheets = own_wb.sheetnames
+    own_wb_sheet_name = None
+
+    if len(own_wb_sheets) > 1:
+        print("\n")
+        print("Ihre Tabelle enhält folgende Blätter: \n" + list_to_string_with_leading_index(own_wb_sheets))
+        print("\n")
+        own_wb_sheet_number = get_input_int("Welches Nummer (links) trägt das Blatt, das die Noten enhält?", range(len(own_wb_sheets)))
+        own_wb_sheet_name = own_wb_sheets[own_wb_sheet_number]
+
+    own_df = pandas.read_excel(own_file, header=None, sheet_name=own_wb_sheet_name)
     print("\n\n")
 
 
@@ -233,7 +245,7 @@ if __name__ == '__main__':
     skip_rows_own = get_input_int("Bei welcher Zeilenzahl (links) beginnt Ihre Tabelle bzw. wo befindet sich der Tabellenkopf?")
     print("\n")
 
-    own_df = pandas.read_excel(own_file, skiprows=skip_rows_own)
+    own_df = pandas.read_excel(own_file, skiprows=skip_rows_own, sheet_name=own_wb_sheet_name)
     print("Die Tabelle enhält folgende Spalten:")
     print(list_to_string_with_leading_index(own_df.columns))
     print("\n")
@@ -269,7 +281,7 @@ if __name__ == '__main__':
     
     nrows_own = last_rows_own + 1
 
-    own_df = pandas.read_excel(own_file, skiprows=skip_rows_own, nrows=nrows_own)
+    own_df = pandas.read_excel(own_file, skiprows=skip_rows_own, nrows=nrows_own, sheet_name=own_wb_sheet_name)
 
     #renaming own_df
     inverted_own_cols = {}
