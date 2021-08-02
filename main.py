@@ -106,9 +106,9 @@ def clean_dataframe(df, cleaing_col, cleaning_set):
 
 if __name__ == '__main__':
     print(
-        "╔══════════════════════════╗" + "\n"
-        "║  GRADES ==TO==> HISQIS   ║" + "\n"
-        "╚══════════════════════════╝" + "\n\n\n"
+        "╔═════════════════════════╗" + "\n"
+        "║  GRADES ==TO==> HISQIS  ║" + "\n"
+        "╚═════════════════════════╝" + "\n\n\n"
     )
 
     config_file = "config.json"
@@ -217,8 +217,8 @@ if __name__ == '__main__':
             print("\n")
             own_cols[req_col] = own_df.columns[col_index]
 
+    print(own_df[own_df[own_cols[Hdrs.MNR]].notnull()].tail(10))
 
-    print(own_df.tail(10))
     last_rows_own = get_input_int_config("Bei welcher Zeilenzahl (links) endet Ihre Tabelle?", range(len(own_df)), config_item=config.get("eigene_ende"))
     
     nrows_own = last_rows_own + 1
