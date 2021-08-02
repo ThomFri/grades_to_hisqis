@@ -1,4 +1,5 @@
 #import json
+import json
 import os
 #import subprocess
 
@@ -29,6 +30,10 @@ import easygui
 
 
 # headers etc.
+from python_modules.input import get_input_int_config, file_selector_config, get_input_config
+from python_modules.output import list_to_string_with_leading_index
+
+
 class Hdrs(Enum):
     MNR = "mtknr"
     ABS = "abschl"
@@ -83,35 +88,6 @@ def find_in_workbook(wb, needle, skiprows=0):
 
     return result
 
-def get_input_int(text, range=None):
-    print("" + str(text) + " ")
-    result = input()
-    while True:
-        if not result.isnumeric():
-            print("Eingabe ist keine (nicht negative) Zahl, bitte korrigieren!")
-            result = input()
-        else:
-            result = int(result)
-            if not range is None:
-                if not result in range:
-                    print("Eingabe ist nicht im Bereich von " + range_edges_to_string(range) + ", bitte korrigieren!")
-                    result = input()
-                else:
-                    break
-            else:
-                break
-                
-    return result
-
-def list_to_string_with_leading_index(list, start=0):
-    result = ""
-    for item in list:
-        result += str(start) + "\t" + str(item) + "\n"
-        start += 1
-
-    result = result[:len(result)-1]
-
-    return result
 
 def join_non_strings(join_string, iteratable):
     result = ""
@@ -119,66 +95,6 @@ def join_non_strings(join_string, iteratable):
         result += join_string + str(item)
 
     result = result[len(join_string):]
-
-    return result
-
-def range_edges_to_string(range):
-    result = ""
-    range_list = list(range)
-    min = range_list[0]
-    max = range_list[0]
-
-    for i in range:
-        if min > i:
-            min = i
-        if max < i:
-            max = i
-
-
-    result = "["+str(min)+", "+str(max)+"]"
-    return result
-
-def file_selector(text, path=".", show_files=True, gui=use_file_picker):
-    result = None
-
-    while True:
-        if use_file_picker:
-            print(text)
-            print("<<ENTER-Taste drücken um Dialog zu öffnen>>")
-            tmp = input()
-
-
-            if use_tkinter:
-                # input_types = [('xls', '*.xls'), ('xlsx', '*.xlsx')]
-                result = askopenfilename(title=text)
-            if use_easygui:
-                input_types = [["*.xls", "*.xlsx", "*.xlsm", "Excel Datei"]]
-                result = easygui.fileopenbox(title=text, filetypes=input_types, multiple=False)
-
-
-        else:
-            files_in_path = [f for f in listdir(path) if isfile(join(path, f))]
-            files_in_path.append("<<Keine hiervon>>")
-            if show_files:
-                print("Dateien im Verzeichnis \"" + path + "\": \n" + list_to_string_with_leading_index(files_in_path) + "\n")
-
-            while True:
-                file_index = get_input_int(text + " [Nummer auf der linken Seite!]:", range(len(files_in_path)))
-                if file_index == len(files_in_path) - 1:
-                    print("Geben Sie den gesamten Dateipfand an:")
-                    result = input()
-                else:
-                    result = files_in_path[file_index]
-
-                if not isfile(result):
-                    print("Ungültiger Pfad!")
-                else:
-                    break
-
-        if not result is None and isfile(result):
-            break
-        else:
-            print("Keine gültige Datei gewählt!")
 
     return result
 
@@ -195,11 +111,28 @@ if __name__ == '__main__':
         "╚══════════════════════════╝" + "\n\n\n"
     )
 
+    config_file = "config.json"
+    if os.path.exists(config_file) and os.path.isfile(config_file):
+        with open('config.json') as f:
+            config = json.load(f)
+
+        if not "use" in config:
+            config["use"] = (get_input_int_config(
+                "\"config.json\" verwenden? [1 = ja, 0 = nein]", [0, 1], None) == 1)
+
+        if not config["use"]:
+            config = dict.fromkeys(config, None)
+    else:
+        config = {"use": False}
+
+
+
+
     if use_tkinter:
         gui = Tk()
         gui.withdraw()
 
-    hq_file = file_selector("Bitte HisQis-Datei auswählen")
+    hq_file = file_selector_config("Bitte HisQis-Datei auswählen", config_item=config.get("hisqis_datei"))
     print("\n")
     hq_wb = open_workbook(hq_file)
     tab_corners = {}
@@ -223,16 +156,16 @@ if __name__ == '__main__':
     hq_matrnr_set = set(hq_df[hq_index_col])
 
 
-    own_file = file_selector("Bitte eigene Datei auswählen", show_files=False)
+    own_file = file_selector_config("Bitte eigene Datei auswählen", show_files=False, config_item=config.get("eigene_datei"))
     own_wb = load_workbook(own_file)
     own_wb_sheets = own_wb.sheetnames
-    own_wb_sheet_name = None
+    own_wb_sheet_name = 0
 
     if len(own_wb_sheets) > 1:
         print("\n")
         print("Ihre Tabelle enhält folgende Blätter: \n" + list_to_string_with_leading_index(own_wb_sheets))
         print("\n")
-        own_wb_sheet_number = get_input_int("Welches Nummer (links) trägt das Blatt, das die Noten enhält?", range(len(own_wb_sheets)))
+        own_wb_sheet_number = get_input_int_config("Welches Nummer (links) trägt das Blatt, das die Noten enhält?", range(len(own_wb_sheets)), config_item=config.get("arbeitsblatt_nummer"))
         own_wb_sheet_name = own_wb_sheets[own_wb_sheet_number]
 
     own_df = pandas.read_excel(own_file, header=None, sheet_name=own_wb_sheet_name)
@@ -242,7 +175,7 @@ if __name__ == '__main__':
     print(own_df.head(10))
 
     print("\n")
-    skip_rows_own = get_input_int("Bei welcher Zeilenzahl (links) beginnt Ihre Tabelle bzw. wo befindet sich der Tabellenkopf?")
+    skip_rows_own = get_input_int_config("Bei welcher Zeilenzahl (links) beginnt Ihre Tabelle bzw. wo befindet sich der Tabellenkopf?", config_item=config.get("eigene_zeilen_ueberspringen"))
     print("\n")
 
     own_df = pandas.read_excel(own_file, skiprows=skip_rows_own, sheet_name=own_wb_sheet_name)
@@ -253,31 +186,40 @@ if __name__ == '__main__':
     own_cols = {}
     fixed_values = {}
 
+    col_config = config.get("eigene_spalten")
     for req_col in req_cols:
         special = req_cols[req_col].get("special")
+
+        if not col_config is None:
+            current_col_config = col_config.get(req_col.value)
+
+            if current_col_config is None:
+                current_col_config = {}
+
+        else:
+            current_col_config = {}
+
         ask_col = True
 
         if special == "col/fixed":
-            special_input = get_input_int("Hat Ihre Tabelle eine \"" + req_cols[req_col]["name"] + "\"-Spalte? [1 = ja, 0 = nein]", [0,1])
+            special_input = get_input_int_config("Hat Ihre Tabelle eine \"" + req_cols[req_col]["name"] + "\"-Spalte? [1 = ja, 0 = nein]", [0,1], config_item=current_col_config.get("spalte_vorhanden"))
             print("\n")
 
             if int(special_input) == 0:
                 ask_col = False
-
                 own_cols[req_col] = req_col
 
-                print("Bitte geben Sie den Festwert für \"" + req_cols[req_col]["name"] + "\" ein:")
-                fixed_values[req_col] = input()
+                fixed_values[req_col] = get_input_config("Bitte geben Sie den Festwert für \"" + req_cols[req_col]["name"] + "\" ein:", config_item=current_col_config.get("festwert"))
                 print("\n")
 
         if ask_col:
-            col_index = get_input_int("Was ist die Nummer (links) Ihrer \"" + req_cols[req_col]["name"] + "\"-Spalte?", range(len(own_df.columns)))
+            col_index = get_input_int_config("Was ist die Nummer (links) Ihrer \"" + req_cols[req_col]["name"] + "\"-Spalte?", range(len(own_df.columns)), config_item=current_col_config.get("spaltennummer"))
             print("\n")
             own_cols[req_col] = own_df.columns[col_index]
 
 
     print(own_df.tail(10))
-    last_rows_own = get_input_int("Bei welcher Zeilenzahl (links) endet Ihre Tabelle?", range(len(own_df)))
+    last_rows_own = get_input_int_config("Bei welcher Zeilenzahl (links) endet Ihre Tabelle?", range(len(own_df)), config_item=config.get("eigene_ende"))
     
     nrows_own = last_rows_own + 1
 
@@ -322,9 +264,10 @@ if __name__ == '__main__':
 
         while True:
             do_loop = False
-            do_ignore = get_input_int("Wie soll hiermit verfahren werden?" + "\n" +
+            do_ignore = get_input_int_config("Wie soll hiermit verfahren werden?" + "\n" +
                                       list_to_string_with_leading_index(ignore_options),
-                                      range(len(ignore_options))
+                                      range(len(ignore_options)),
+                                      config_item=config.get("was_tun_wenn_matrikelnr_nicht_ueberein_stimmen")
                                       )
 
             if do_ignore == 0 or do_ignore == 2:
@@ -387,9 +330,10 @@ if __name__ == '__main__':
             "Durch \""+Grd.NAN.value+"\" ersetzen",
             "Durch \""+Grd.KAN.value+"\" ersetzen"
         ]
-        do_bewertung = get_input_int("\"bewertung\"-Spalte enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
+        do_bewertung = get_input_int_config("\"bewertung\"-Spalte enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
                                      list_to_string_with_leading_index(bewertung_options),
-                                     range(len(bewertung_options))
+                                     range(len(bewertung_options)),
+                                     config_item=config.get("was_tun_wenn_bewertung_leere_werte_enthaelt")
                                      )
         print("\n")
 
@@ -404,12 +348,16 @@ if __name__ == '__main__':
         else x
     )
 
-    do_target = get_input_int("Ergebnis direkt in HisQis-Datei schreiben? [1 = ja, 0 = nein, Kopie anlegen]", [0,1])
+    do_target = get_input_int_config("Ergebnis direkt in HisQis-Datei schreiben? [1 = ja, 0 = nein, Kopie anlegen]", [0,1], config_item=config.get("in_hisqis_datei_schreiben"))
     if do_target == 0:
         last_dot = hq_file.rfind('.')
         target_file = hq_file[:last_dot] + "_upload" + hq_file[last_dot:]
+        target_file_config = config.get("ziel_datei")
 
-        if use_file_picker:
+        if not target_file_config is None:
+            target_file = target_file_config
+
+        elif use_file_picker:
             if use_tkinter:
                 save_types = [('xls', '*.xls')]
                 target_file = asksaveasfilename(title="Upload-Datei speichern unter...", filetypes=save_types, defaultextension=save_types, initialfile=target_file)
@@ -469,11 +417,10 @@ if __name__ == '__main__':
     print("Sie können die Datei \"" + target_file + "\" jetzt auf HisQis hochladen.")
     print("\n")
 
-    do_open_file = get_input_int("Datei zur Kontrolle öffnen? [1 = ja, 0 = nein]", [0, 1])
+    do_open_file = get_input_int_config("Datei zur Kontrolle öffnen? [1 = ja, 0 = nein]", [0, 1], config_item=config.get("ziel_datei_oeffnen"))
 
     if do_open_file == 1:
-        os.startfile(target_file)
-
+        os.startfile(os.path.normpath(target_file))
     pass
 
 

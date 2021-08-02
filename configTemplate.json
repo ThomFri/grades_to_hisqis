@@ -1,8 +1,25 @@
 {
-  "hisqis_Datei": "prf_251301_20211_1.xls",
-  "eigene_Datei": "Final Grades.xlsx",
-  "noten_Spalte": "Final grade",
-  "noten_mal_100_nehmen": 1,
-  "prüfungs_datum": "Date of hand in",
-  "was_tun_wenn_matrikelnr_nicht_überein_stimmen": "stop"
+  "hisqis_datei": "testfiles/prf_251301_20211_1 - Kopie.xls",
+  "eigene_datei": "testfiles/Final Grades.xlsx",
+  "arbeitsblatt_nummer": 0,
+  "eigene_zeilen_ueberspringen": 0,
+  "eigene_spalten": {
+    "mtknr": {
+      "spaltennummer": 4
+    },
+    "bewertung": {
+      "spaltennummer": 11
+    },
+    "pdatum": {
+      "spalte_vorhanden": 1,
+      "spaltennummer": 8,
+      "festwert": "1.1.2021"
+    }
+  },
+  "eigene_ende": 1,
+  "was_tun_wenn_matrikelnr_nicht_ueberein_stimmen": 1,
+  "was_tun_wenn_bewertung_leere_werte_enthaelt": 1,
+  "in_hisqis_datei_schreiben": 0,
+  "ziel_datei": "testfiles/_done.xls",
+  "ziel_datei_oeffnen": 1
 }
