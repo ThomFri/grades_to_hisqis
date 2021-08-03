@@ -165,7 +165,7 @@ if __name__ == '__main__':
         print("\n")
         print("Ihre Tabelle enhält folgende Blätter: \n" + list_to_string_with_leading_index(own_wb_sheets))
         print("\n")
-        own_wb_sheet_number = get_input_int_config("Welches Nummer (links) trägt das Blatt, das die Noten enhält?", range(len(own_wb_sheets)), config_item=config.get("arbeitsblatt_nummer"))
+        own_wb_sheet_number = get_input_int_config("Welche Nummer (links) trägt das Blatt, das die Noten enhält?", range(len(own_wb_sheets)), config_item=config.get("arbeitsblatt_nummer"))
         own_wb_sheet_name = own_wb_sheets[own_wb_sheet_number]
 
     own_df = pandas.read_excel(own_file, header=None, sheet_name=own_wb_sheet_name)
@@ -343,7 +343,7 @@ if __name__ == '__main__':
             merged_dataframe[Hdrs.BEW.value].replace(np.nan, Grd.KAN.value, regex=True, inplace=True)
 
     merged_dataframe[Hdrs.PDA.value] = merged_dataframe[Hdrs.PDA.value].apply(
-        lambda x: dateutil.parser.parse(str(x)).strftime("%d.%m.%Y")
+        lambda x: dateutil.parser.parse(str(x), dayfirst=True, yearfirst=False).strftime("%d.%m.%Y", )
         if (np.all(pandas.notnull(x)))
         else x
     )
