@@ -358,6 +358,10 @@ if __name__ == '__main__':
             target_file = target_file_config
 
         elif use_file_picker:
+            print("Bitte Speicherziel für Upload-Datei auswählen")
+            print("<<ENTER-Taste drücken um Dialog zu öffnen>>")
+            tmp = input()
+
             if use_tkinter:
                 save_types = [('xls', '*.xls')]
                 target_file = asksaveasfilename(title="Upload-Datei speichern unter...", filetypes=save_types, defaultextension=save_types, initialfile=target_file)
