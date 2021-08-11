@@ -71,7 +71,7 @@ req_cols = {
 
 use_tkinter = False
 use_easygui = True
-use_file_picker = False
+use_file_picker = True
 
 def find_in_workbook(wb, needle, skiprows=0):
     result = []
