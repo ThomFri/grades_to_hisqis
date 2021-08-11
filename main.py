@@ -343,7 +343,7 @@ if __name__ == '__main__':
             merged_dataframe[Hdrs.BEW.value].replace(np.nan, Grd.KAN.value, regex=True, inplace=True)
 
     merged_dataframe[Hdrs.PDA.value] = merged_dataframe[Hdrs.PDA.value].apply(
-        lambda x: dateutil.parser.parse(str(x), dayfirst=True, yearfirst=False).strftime("%d.%m.%Y", )
+        lambda x: dateutil.parser.parse(str(x), dayfirst=True, yearfirst=False).strftime("%d.%m.%Y")
         if (np.all(pandas.notnull(x)))
         else x
     )
