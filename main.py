@@ -58,13 +58,16 @@ class Edg(Enum):
 key = Hdrs.MNR
 req_cols = {
         Hdrs.MNR: {
-            "name": "Matr.Nr."
+            "name": "mtknr",
+            "nameNice": "Matrikelnummer"
         },
         Hdrs.BEW: {
-            "name": "Bewertung"
+            "name": "bewertung",
+            "nameNice": "Bwertung"
         },
         Hdrs.PDA: {
-            "name": "Prüfungsdatum",
+            "name": "pdatum",
+            "nameNice": "Prüfungsdatum",
             "special": "col/fixed"
         }
     }
@@ -132,7 +135,7 @@ if __name__ == '__main__':
         gui = Tk()
         gui.withdraw()
 
-    hq_file = file_selector_config("Bitte HisQis-Datei auswählen", config_item=config.get("hisqis_datei"))
+    hq_file = file_selector_config("Bitte von HisQis heruntergeladene Export-Datei (XLS) auswählen", config_item=config.get("hisqis_datei"))
     print("\n")
     hq_wb = open_workbook(hq_file)
     tab_corners = {}
@@ -163,9 +166,9 @@ if __name__ == '__main__':
 
     if len(own_wb_sheets) > 1:
         print("\n")
-        print("Ihre Tabelle enhält folgende Blätter: \n" + list_to_string_with_leading_index(own_wb_sheets))
+        print("Ihre Excel-Datei enhält folgende Tabellenblätter: \n" + list_to_string_with_leading_index(own_wb_sheets))
         print("\n")
-        own_wb_sheet_number = get_input_int_config("Welche Nummer (links) trägt das Blatt, das die Noten enhält?", range(len(own_wb_sheets)), config_item=config.get("arbeitsblatt_nummer"))
+        own_wb_sheet_number = get_input_int_config("Welche Nummer (links) trägt das Tabellenblatt, das die Noten enhält?", range(len(own_wb_sheets)), config_item=config.get("arbeitsblatt_nummer"))
         own_wb_sheet_name = own_wb_sheets[own_wb_sheet_number]
 
     own_df = pandas.read_excel(own_file, header=None, sheet_name=own_wb_sheet_name)
@@ -175,12 +178,15 @@ if __name__ == '__main__':
     print(own_df.head(10))
 
     print("\n")
-    skip_rows_own = get_input_int_config("Bei welcher Zeilenzahl (links) beginnt Ihre Tabelle bzw. wo befindet sich der Tabellenkopf?", config_item=config.get("eigene_zeilen_ueberspringen"))
+    skip_rows_own = get_input_int_config("In welcher Zeilenzahl (links) befindet sich der Tabellenkopf in der oben angezeigten Tabelle?", config_item=config.get("eigene_zeilen_ueberspringen"))
     print("\n")
 
     own_df = pandas.read_excel(own_file, skiprows=skip_rows_own, sheet_name=own_wb_sheet_name)
-    print("Die Tabelle enhält folgende Spalten:")
+    print("Die oben angezeigte Tabelle enhält folgende Spalten:")
     print(list_to_string_with_leading_index(own_df.columns))
+    print("\n")
+
+    print("Diese müssen Sie im Folgenden den Spalten von HisQis zuordnen.")
     print("\n")
 
     own_cols = {}
@@ -209,17 +215,17 @@ if __name__ == '__main__':
                 ask_col = False
                 own_cols[req_col] = req_col
 
-                fixed_values[req_col] = get_input_config("Bitte geben Sie den Festwert für \"" + req_cols[req_col]["name"] + "\" ein:", config_item=current_col_config.get("festwert"))
+                fixed_values[req_col] = get_input_config("Bitte geben Sie den Festwert für " + req_cols[req_col]["nameNice"] + "(in HisQis: \""+ req_cols[req_col]["nameNice"] + "\") ein:", config_item=current_col_config.get("festwert"))
                 print("\n")
 
         if ask_col:
-            col_index = get_input_int_config("Was ist die Nummer (links) Ihrer \"" + req_cols[req_col]["name"] + "\"-Spalte?", range(len(own_df.columns)), config_item=current_col_config.get("spaltennummer"))
+            col_index = get_input_int_config("Was ist die Nummer (links) Ihrer " + req_cols[req_col]["nameNice"] + "-Spalte (in HisQis: \""+ req_cols[req_col]["nameNice"] + "\")?", range(len(own_df.columns)), config_item=current_col_config.get("spaltennummer"))
             print("\n")
             own_cols[req_col] = own_df.columns[col_index]
 
     print(own_df[own_df[own_cols[Hdrs.MNR]].notnull()].tail(10))
 
-    last_rows_own = get_input_int_config("Bei welcher Zeilenzahl (links) endet Ihre Tabelle?", range(len(own_df)), config_item=config.get("eigene_ende"))
+    last_rows_own = get_input_int_config("Bei welcher Zeilenzahl (links) endet der Inhalt der oben angezeigte Tabelle?", range(len(own_df)), config_item=config.get("eigene_ende"))
     
     nrows_own = last_rows_own + 1
 
@@ -255,10 +261,10 @@ if __name__ == '__main__':
         print("\n")
 
         ignore_options = [
-            "Nur die Matr.-Nr. der HisQis-Datei berücksichtigen",
-            "Nur die Matr.-Nr. der eigenen Datei berücksichtigen",
-            "Nur die Matr.-Nr. berücksichtigen, die in beiden Dateien enthalten sind",
-            "Die Matr.-Nr. aus beiden Dateien berücksichtigen",
+            "Nur die Matrikelnummern der HisQis-Datei berücksichtigen",
+            "Nur die Matrikelnummern der eigenen Datei berücksichtigen",
+            "Nur die Matrikelnummern berücksichtigen, die in beiden Dateien enthalten sind",
+            "Die Matrikelnummern aus beiden Dateien berücksichtigen",
             "Mehr Details anzeigen"
         ]
 
@@ -280,6 +286,7 @@ if __name__ == '__main__':
                 print("Zusätzlich in HisQis-Datei:")
                 print("===========================")
                 if len(add_hq) > 0:
+                    # matrinr, name, note, be/ne.. [pdat]
                     with pandas.option_context('display.max_rows', None):  # more options can be specified also
                         print(hq_df[hq_df[key.value].isin(add_hq)])
                 else:
@@ -371,7 +378,7 @@ if __name__ == '__main__':
         else x
     )
 
-    do_target = get_input_int_config("Ergebnis direkt in HisQis-Datei schreiben? [1 = ja, 0 = nein, Kopie anlegen]", [0,1], config_item=config.get("in_hisqis_datei_schreiben"))
+    do_target = get_input_int_config("Ergebnis direkt in HisQis-Datei schreiben? [1 = ja, 0 = nein / Kopie anlegen]", [0,1], config_item=config.get("in_hisqis_datei_schreiben"))
     if do_target == 0:
         last_dot = hq_file.rfind('.')
         target_file = hq_file[:last_dot] + "_upload" + hq_file[last_dot:]
