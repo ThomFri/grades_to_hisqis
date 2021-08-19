@@ -280,7 +280,8 @@ if __name__ == '__main__':
                 print("Zusätzlich in HisQis-Datei:")
                 print("===========================")
                 if len(add_hq) > 0:
-                    print(hq_df[hq_df[key.value].isin(add_hq)].head())
+                    with pandas.option_context('display.max_rows', None):  # more options can be specified also
+                        print(hq_df[hq_df[key.value].isin(add_hq)])
                 else:
                     print("Keine zusätzlichen Daten")
 
@@ -289,7 +290,8 @@ if __name__ == '__main__':
                 print("Zusätzlich in eigener Datei:")
                 print("============================")
                 if len(add_own) > 0:
-                    print(own_df[own_df[key.value].isin(add_own)].head())
+                    with pandas.option_context('display.max_rows', None):
+                        print(own_df[own_df[key.value].isin(add_own)])
                 else:
                     print("Keine zusätzlichen Daten")
 
@@ -302,9 +304,37 @@ if __name__ == '__main__':
 
     print("\n" + "Daten abgleichen..." + "\n")
     original_header = hq_df.columns
-    hq_df.drop(columns=[Hdrs.BEW.value, Hdrs.PDA.value], inplace=True)
+    #hq_df.drop(columns=[Hdrs.BEW.value, Hdrs.PDA.value], inplace=True)
     own_df = own_df[[key.value, Hdrs.BEW.value, Hdrs.PDA.value]]
+
+    grade_mean = pandas.to_numeric(own_df[Hdrs.BEW.value], errors='coerce').mean()
+    if grade_mean < 6:
+        # needs multiplication!
+        own_df[Hdrs.BEW.value] = own_df[Hdrs.BEW.value].apply(
+            lambda x: x * 100
+            if not isinstance(x, str)
+            else x
+        )
+
     merged_dataframe = pandas.merge(hq_df, own_df, on=key.value, how="outer")
+
+    # just a helper
+    def merger_non_nan(val1, val2):
+        if pandas.isna(val1):
+            return val2
+        else:
+            return val1
+
+
+    merging_cols = [Hdrs.BEW.value, Hdrs.PDA.value]
+
+    for merging_col in merging_cols:
+        merged_dataframe[merging_col] = merged_dataframe.apply(
+            lambda x: merger_non_nan(x[merging_col+"_x"], x[merging_col+"_y"]), axis=1
+        )
+
+
+
     merged_dataframe = merged_dataframe[original_header]
 
     merged_dataframe[Hdrs.BEW.value] = merged_dataframe[Hdrs.BEW.value].apply(
@@ -313,14 +343,7 @@ if __name__ == '__main__':
         else x
     )
 
-    grade_mean = pandas.to_numeric(merged_dataframe[Hdrs.BEW.value], errors='coerce').mean()
-    if grade_mean < 6:
-        #needs multiplication!
-        merged_dataframe[Hdrs.BEW.value] = merged_dataframe[Hdrs.BEW.value].apply(
-            lambda x: x*100
-            if not isinstance(x,str)
-            else x
-        )
+
 
     bewertung_contains_nan = (merged_dataframe[Hdrs.BEW.value].isnull().sum() > 0)
 
