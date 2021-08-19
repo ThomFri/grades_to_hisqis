@@ -63,7 +63,7 @@ req_cols = {
         },
         Hdrs.BEW: {
             "name": "bewertung",
-            "nameNice": "Bwertung"
+            "nameNice": "Bewertung"
         },
         Hdrs.PDA: {
             "name": "pdatum",
@@ -208,18 +208,18 @@ if __name__ == '__main__':
         ask_col = True
 
         if special == "col/fixed":
-            special_input = get_input_int_config("Hat Ihre Tabelle eine \"" + req_cols[req_col]["name"] + "\"-Spalte? [1 = ja, 0 = nein]", [0,1], config_item=current_col_config.get("spalte_vorhanden"))
+            special_input = get_input_int_config("Hat Ihre Tabelle eine " + req_cols[req_col]["nameNice"] + "-Spalte (in HisQis: \""+ req_cols[req_col]["name"] + "\")? [1 = ja, 0 = nein]", [0,1], config_item=current_col_config.get("spalte_vorhanden"))
             print("\n")
 
             if int(special_input) == 0:
                 ask_col = False
                 own_cols[req_col] = req_col
 
-                fixed_values[req_col] = get_input_config("Bitte geben Sie den Festwert für " + req_cols[req_col]["nameNice"] + "(in HisQis: \""+ req_cols[req_col]["nameNice"] + "\") ein:", config_item=current_col_config.get("festwert"))
+                fixed_values[req_col] = get_input_config("Bitte geben Sie den Festwert für " + req_cols[req_col]["nameNice"] + " (in HisQis: \""+ req_cols[req_col]["name"] + "\") ein:", config_item=current_col_config.get("festwert"))
                 print("\n")
 
         if ask_col:
-            col_index = get_input_int_config("Was ist die Nummer (links) Ihrer " + req_cols[req_col]["nameNice"] + "-Spalte (in HisQis: \""+ req_cols[req_col]["nameNice"] + "\")?", range(len(own_df.columns)), config_item=current_col_config.get("spaltennummer"))
+            col_index = get_input_int_config("Was ist die Nummer (links) Ihrer " + req_cols[req_col]["nameNice"] + "-Spalte (in HisQis: \""+ req_cols[req_col]["name"] + "\")?", range(len(own_df.columns)), config_item=current_col_config.get("spaltennummer"))
             print("\n")
             own_cols[req_col] = own_df.columns[col_index]
 
@@ -286,9 +286,9 @@ if __name__ == '__main__':
                 print("Zusätzlich in HisQis-Datei:")
                 print("===========================")
                 if len(add_hq) > 0:
-                    # matrinr, name, note, be/ne.. [pdat]
                     with pandas.option_context('display.max_rows', None):  # more options can be specified also
-                        print(hq_df[hq_df[key.value].isin(add_hq)])
+                        to_print_rows = hq_df[hq_df[key.value].isin(add_hq)]
+                        print(to_print_rows[[Hdrs.MNR.value, Hdrs.NNA.value, Hdrs.VNA.value, Hdrs.BEW.value, Hdrs.PST.value]])
                 else:
                     print("Keine zusätzlichen Daten")
 
@@ -360,7 +360,7 @@ if __name__ == '__main__':
             "Durch \""+Grd.NAN.value+"\" ersetzen",
             "Durch \""+Grd.KAN.value+"\" ersetzen"
         ]
-        do_bewertung = get_input_int_config("\"bewertung\"-Spalte enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
+        do_bewertung = get_input_int_config("Bewertung-Spalte (in HisQis: \"bewertung\") enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
                                      list_to_string_with_leading_index(bewertung_options),
                                      range(len(bewertung_options)),
                                      config_item=config.get("was_tun_wenn_bewertung_leere_werte_enthaelt")
@@ -427,10 +427,20 @@ if __name__ == '__main__':
     #    target_sheet.write(row_i, col, val)
     row_i += 1
 
+    all_cols = list(merged_dataframe.columns)
+    to_ignore_nans = [Hdrs.RES.value]
+    to_ignore_col_indexes = []
+
+    for to_ignore_nan in to_ignore_nans:
+        tmp = all_cols.index(to_ignore_nan)
+        to_ignore_col_indexes.append(tmp)
+
+
     for index, row_content in merged_dataframe.iterrows():
         for col, val in enumerate(row_content, start=0):
             if isinstance(val, float) and math.isnan(val):
-                target_sheet.write(row_i, col, style=nan_format)
+                if col not in to_ignore_col_indexes:
+                    target_sheet.write(row_i, col, style=nan_format)
             else:
                 target_sheet.write(row_i, col, val)
         row_i += 1
@@ -449,6 +459,7 @@ if __name__ == '__main__':
 
     print("\n" + "FERTIG!")
     print("Sie können die Datei \"" + target_file + "\" jetzt auf HisQis hochladen.")
+    print("Bitte kontrollieren Sie zuvor leere Zellen, die nicht gefüllt werden konnten; diese sind in gelb hervorgehoben")
     print("\n")
 
     do_open_file = get_input_int_config("Datei zur Kontrolle öffnen? [1 = ja, 0 = nein]", [0, 1], config_item=config.get("ziel_datei_oeffnen"))
