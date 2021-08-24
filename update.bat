@@ -7,6 +7,7 @@ echo.
 
 git pull
 
+echo.
 echo Update fertig.
 echo.
 
