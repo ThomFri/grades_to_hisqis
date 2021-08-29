@@ -2,6 +2,7 @@
 import json
 import os
 #import subprocess
+import sys
 
 import pandas as pandas
 #import openpyxl
@@ -114,7 +115,15 @@ if __name__ == '__main__':
         "╚═════════════════════════╝" + "\n\n\n"
     )
 
-    config_file = "config.json"
+    print("Reading config")
+
+    default_config_file = 'config.json'
+
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    else:
+        config_file = default_config_file
+
     if os.path.exists(config_file) and os.path.isfile(config_file):
         with open('config.json') as f:
             config = json.load(f)
