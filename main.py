@@ -1,6 +1,4 @@
-import json
 import os
-import sys
 import pandas as pandas
 import xlwt
 from xlrd import open_workbook
@@ -11,9 +9,6 @@ from shutil import copyfile
 from xlutils.copy import copy
 import math
 from enum import Enum
-from tkinter import Tk
-from tkinter.filedialog import askopenfilename, asksaveasfilename
-import easygui
 
 #gui
 #https://stackoverflow.com/questions/45441885/how-can-i-create-a-dropdown-menu-from-a-list-in-tkinter
@@ -23,9 +18,10 @@ import easygui
 
 
 # headers etc.
-from python_modules.config import read_cache_sys_argv
+from python_modules.cache import read_cache, write_cache
+from python_modules.config import read_config_sys_argv
 from python_modules.input import get_input_int_config, file_selector_config, get_input_config
-from python_modules.output import list_to_string_with_leading_index, print_program_title
+from python_modules.output import list_to_string_with_leading_index, print_program_title, save_file_selector
 
 
 class Hdrs(Enum):
@@ -66,7 +62,6 @@ req_cols = {
         }
     }
 
-use_tkinter = False
 use_easygui = True
 use_file_picker = True
 
@@ -106,14 +101,15 @@ if __name__ == '__main__':
     print("")
 
     default_config_file = 'config.json'
-    config = read_cache_sys_argv(default_config_file=default_config_file)
+    default_cache_file = "cache.json"
+    config = read_config_sys_argv(default_config_file=default_config_file)
+    cache = read_cache(cache_file=default_cache_file)
 
 
-    if use_tkinter:
-        gui = Tk()
-        gui.withdraw()
-
-    hq_file = file_selector_config("Bitte von HisQis heruntergeladene Export-Datei (XLS) auswählen", config_item=config.get("hisqis_datei"))
+    hq_file = file_selector_config("Bitte von HisQis heruntergeladene Export-Datei (XLS) auswählen",
+                                   config_item=config.get("hisqis_datei"),
+                                   path=cache.get("last_hq_file"))
+    cache["last_hq_file"] = hq_file
     print("\n")
     hq_wb = open_workbook(hq_file)
     tab_corners = {}
@@ -137,7 +133,10 @@ if __name__ == '__main__':
     hq_matrnr_set = set(hq_df[hq_index_col])
 
 
-    own_file = file_selector_config("Bitte eigene Datei auswählen", show_files=False, config_item=config.get("eigene_datei"))
+    own_file = file_selector_config("Bitte eigene Datei auswählen", show_files=False,
+                                    config_item=config.get("eigene_datei"),
+                                    path=cache.get("last_own_file"))
+    cache["last_own_file"] = own_file
     own_wb = load_workbook(own_file)
     own_wb_sheets = own_wb.sheetnames
     own_wb_sheet_name = 0
@@ -364,22 +363,21 @@ if __name__ == '__main__':
 
         if not target_file_config is None:
             target_file = target_file_config
-
-        elif use_file_picker:
-            print("Bitte Speicherziel für Upload-Datei auswählen")
-            print("<<ENTER-Taste drücken um Dialog zu öffnen>>")
-            tmp = input()
-
-            if use_tkinter:
-                save_types = [('xls', '*.xls')]
-                target_file = asksaveasfilename(title="Upload-Datei speichern unter...", filetypes=save_types, defaultextension=save_types, initialfile=target_file)
-            if use_easygui:
-                save_types = [["*.xls", "Excel Datei"]]
-                target_file = easygui.filesavebox(title="Upload-Datei speichern unter...", filetypes=save_types, default=target_file)
-
         else:
-            pass
+            save_types = [["*.xls", "Excel Datei"]]
 
+            last_target_file = cache.get("last_target_file")
+            if last_target_file is None:
+                last_target_file = target_file
+
+            target_file = save_file_selector(text="Bitte Speicherziel für Upload-Datei auswählen",
+                                             folder_path=cache.get("last_folder_path"),
+                                             file=last_target_file,
+                                             gui=use_file_picker,
+                                             save_filetypes=save_types)
+
+        cache["last_target_file"] = os.path.basename(target_file)
+        cache["last_folder_path"] = os.path.dirname(target_file)
         copyfile(hq_file, target_file)
 
     else:
@@ -441,6 +439,8 @@ if __name__ == '__main__':
     print("\n")
 
     do_open_file = get_input_int_config("Datei zur Kontrolle öffnen? [1 = ja, 0 = nein]", [0, 1], config_item=config.get("ziel_datei_oeffnen"))
+
+    write_cache(cache, default_cache_file)
 
     if do_open_file == 1:
         os.startfile(os.path.normpath(target_file))
