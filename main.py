@@ -1,21 +1,13 @@
-#import json
 import json
 import os
-#import subprocess
 import sys
-
 import pandas as pandas
-#import openpyxl
 import xlwt
 from xlrd import open_workbook
 from openpyxl import load_workbook
-from os import listdir
-from os.path import isfile, join
 import dateutil.parser
-#from datetime import datetime
 import numpy as np
 from shutil import copyfile
-#import xlsxwriter
 from xlutils.copy import copy
 import math
 from enum import Enum
@@ -31,8 +23,9 @@ import easygui
 
 
 # headers etc.
+from python_modules.config import read_cache_sys_argv
 from python_modules.input import get_input_int_config, file_selector_config, get_input_config
-from python_modules.output import list_to_string_with_leading_index
+from python_modules.output import list_to_string_with_leading_index, print_program_title
 
 
 class Hdrs(Enum):
@@ -109,35 +102,11 @@ def clean_dataframe(df, cleaing_col, cleaning_set):
     df.reset_index(drop=True, inplace=True)
 
 if __name__ == '__main__':
-    print(
-        "╔═════════════════════════╗" + "\n"
-        "║  GRADES ==TO==> HISQIS  ║" + "\n"
-        "╚═════════════════════════╝" + "\n\n\n"
-    )
-
-    print("Reading config")
+    print_program_title("GRADES ==TO==> HISQIS")
+    print("")
 
     default_config_file = 'config.json'
-
-    if len(sys.argv) > 1:
-        config_file = sys.argv[1]
-    else:
-        config_file = default_config_file
-
-    if os.path.exists(config_file) and os.path.isfile(config_file):
-        with open('config.json') as f:
-            config = json.load(f)
-
-        if not "use" in config:
-            config["use"] = (get_input_int_config(
-                "\"config.json\" verwenden? [1 = ja, 0 = nein]", [0, 1], None) == 1)
-
-        if not config["use"]:
-            config = dict.fromkeys(config, None)
-    else:
-        config = {"use": False}
-
-
+    config = read_cache_sys_argv(default_config_file=default_config_file)
 
 
     if use_tkinter:
