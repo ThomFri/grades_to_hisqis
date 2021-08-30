@@ -375,8 +375,7 @@ if __name__ == '__main__':
                                              gui=use_file_picker,
                                              save_filetypes=save_types)
 
-        cache["last_target_file"] = os.path.basename(target_file)
-        cache["last_folder_path"] = os.path.dirname(target_file)
+        cache["last_target_file"] = target_file
         copyfile(hq_file, target_file)
 
     else:
