@@ -132,10 +132,9 @@ if __name__ == '__main__':
 
     hq_matrnr_set = set(hq_df[hq_index_col])
 
-
     own_file = file_selector_config("Bitte eigene Datei auswählen", show_files=False,
                                     config_item=config.get("eigene_datei"),
-                                    path=cache.get("last_own_file"))
+                                    path=hq_file)
     cache["last_own_file"] = own_file
     own_wb = load_workbook(own_file)
     own_wb_sheets = own_wb.sheetnames
