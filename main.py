@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     own_file = file_selector_config("Bitte eigene Datei auswählen", show_files=False,
                                     config_item=config.get("eigene_datei"),
-                                    path=os.path.dirname(hq_file))
+                                    path=os.path.dirname(hq_file)+"/")
     cache["last_own_file"] = own_file
     own_wb = load_workbook(own_file)
     own_wb_sheets = own_wb.sheetnames
