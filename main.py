@@ -369,9 +369,9 @@ if __name__ == '__main__':
             if last_target_file is None:
                 last_target_file = target_file
 
+
             target_file = save_file_selector(text="Bitte Speicherziel für Upload-Datei auswählen",
-                                             folder_path=cache.get("last_folder_path"),
-                                             file=last_target_file,
+                                             file_or_folder=last_target_file,
                                              gui=use_file_picker,
                                              save_filetypes=save_types)
 
