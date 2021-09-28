@@ -393,7 +393,7 @@ if __name__ == '__main__':
             save_types = [["*.xls", "Excel Datei"]]
 
             last_target_file = cache.get("last_target_file")
-            if last_target_file is None:
+            if last_target_file is None or True: #override that!
                 last_target_file = target_file
 
             print("\n")
