@@ -53,7 +53,7 @@ req_cols = {
         },
         Hdrs.BEW: {
             "name": "bewertung",
-            "nameNice": "Bewertung"
+            "nameNice": "Bewertung/Note"
         },
         Hdrs.PDA: {
             "name": "pdatum",
@@ -96,16 +96,23 @@ def clean_dataframe(df, cleaing_col, cleaning_set):
     df.drop(to_delte, inplace=True)
     df.reset_index(drop=True, inplace=True)
 
+def clear_console(reprint_title=True):
+    from python_modules import output
+    output.clear_console()
+
+    print_program_title("GRADES ==TO==> HISQIS")
+    print("")
+
 if __name__ == '__main__':
     print_program_title("GRADES ==TO==> HISQIS")
     print("")
 
-    default_config_file = 'config.json'
+    default_config_file = 'config123.json'
     default_cache_file = "cache.json"
-    config = read_config_sys_argv(default_config_file=default_config_file)
+    config = read_config_sys_argv(default_config_file=default_config_file, default_fallback=True)
     cache = read_cache(cache_file=default_cache_file)
 
-
+    clear_console()
     hq_file = file_selector_config("Bitte von HisQis heruntergeladene Export-Datei (XLS) auswählen",
                                    config_item=config.get("hisqis_datei"),
                                    path=cache.get("last_hq_file"))
@@ -132,6 +139,7 @@ if __name__ == '__main__':
 
     hq_matrnr_set = set(hq_df[hq_index_col])
 
+    clear_console()
     own_file = file_selector_config("Bitte eigene Datei auswählen", show_files=False,
                                     config_item=config.get("eigene_datei"),
                                     path=os.path.dirname(hq_file)+"/")
@@ -141,6 +149,7 @@ if __name__ == '__main__':
     own_wb_sheet_name = 0
 
     if len(own_wb_sheets) > 1:
+        clear_console()
         print("\n")
         print("Ihre Excel-Datei enhält folgende Tabellenblätter: \n" + list_to_string_with_leading_index(own_wb_sheets))
         print("\n")
@@ -148,28 +157,41 @@ if __name__ == '__main__':
         own_wb_sheet_name = own_wb_sheets[own_wb_sheet_number]
 
     own_df = pandas.read_excel(own_file, header=None, sheet_name=own_wb_sheet_name)
-    print("\n\n")
 
-
-    print(own_df.head(17))
+    clear_console()
+    print(own_df.head(10))
 
     print("\n")
     skip_rows_own = get_input_int_config("In welcher Zeilenzahl (links) befindet sich der Tabellenkopf in der oben angezeigten Tabelle?", config_item=config.get("eigene_zeilen_ueberspringen"))
-    print("\n")
+
 
     own_df = pandas.read_excel(own_file, skiprows=skip_rows_own, sheet_name=own_wb_sheet_name)
-    print("Die oben angezeigte Tabelle enhält folgende Spalten:")
-    print(list_to_string_with_leading_index(own_df.columns))
-    print("\n")
 
-    print("Diese müssen Sie im Folgenden den Spalten von HisQis zuordnen.")
-    print("\n")
+    #clear_console()
+    ##print(own_df.head(10))
+    ##print("\n")
+    #print("Ihre Tabelle enhält folgende Spalten:")
+    #print(list_to_string_with_leading_index(own_df.columns))
+    #print("\n")
+    #
+    #print("Diese müssen Sie im Folgenden den Spalten von HisQis zuordnen.")
+    #print("\n")
 
     own_cols = {}
     fixed_values = {}
 
     col_config = config.get("eigene_spalten")
     for req_col in req_cols:
+        clear_console()
+        #print(own_df.head(10))
+        #print("\n")
+        print("Ihre Tabelle enhält folgende Spalten:")
+        print(list_to_string_with_leading_index(own_df.columns))
+        print("\n")
+
+        print("Diese müssen Sie den Spalten von HisQis zuordnen.")
+        print("\n")
+
         special = req_cols[req_col].get("special")
 
         if not col_config is None:
@@ -199,6 +221,7 @@ if __name__ == '__main__':
             print("\n")
             own_cols[req_col] = own_df.columns[col_index]
 
+    clear_console()
     print(own_df[own_df[own_cols[Hdrs.MNR]].notnull()].tail(10))
 
     last_rows_own = get_input_int_config("Bei welcher Zeilenzahl (links) endet der Inhalt der oben angezeigte Tabelle?", range(len(own_df)), config_item=config.get("eigene_ende"))
@@ -225,7 +248,7 @@ if __name__ == '__main__':
         add_hq = hq_matrnr_set - own_matrnr_set
         add_own = own_matrnr_set - hq_matrnr_set
 
-        print("\n\n")
+        clear_console()
         print("╔══════════════════════════════════════════════════════════════════════╗")
         print("║ WARNUNG!!!                                                           ║")
         print("║ ----------                                                           ║")
@@ -257,8 +280,8 @@ if __name__ == '__main__':
             if do_ignore == 1 or do_ignore == 2:
                 clean_dataframe(hq_df, key.value, add_hq)
             if do_ignore == 4:
-                print("\n\n")
 
+                clear_console()
                 print("Zusätzlich in HisQis-Datei:")
                 print("===========================")
                 if len(add_hq) > 0:
@@ -285,7 +308,8 @@ if __name__ == '__main__':
             if not do_loop:
                 break
 
-    print("\n" + "Daten abgleichen..." + "\n")
+    clear_console()
+    print("Daten abgleichen..." + "\n")
     original_header = hq_df.columns
     #hq_df.drop(columns=[Hdrs.BEW.value, Hdrs.PDA.value], inplace=True)
     own_df = own_df[[key.value, Hdrs.BEW.value, Hdrs.PDA.value]]
@@ -336,7 +360,9 @@ if __name__ == '__main__':
             "Durch \""+Grd.NAN.value+"\" ersetzen",
             "Durch \""+Grd.KAN.value+"\" ersetzen"
         ]
-        do_bewertung = get_input_int_config("Bewertung-Spalte (in HisQis: \"bewertung\") enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
+
+        clear_console()
+        do_bewertung = get_input_int_config("Bewertung/Note-Spalte (in HisQis: \"bewertung\") enthälte leere Werte! Wie soll mit diesen verfahren werden?" + "\n" +
                                      list_to_string_with_leading_index(bewertung_options),
                                      range(len(bewertung_options)),
                                      config_item=config.get("was_tun_wenn_bewertung_leere_werte_enthaelt")
@@ -354,6 +380,7 @@ if __name__ == '__main__':
         else x
     )
 
+    clear_console()
     do_target = get_input_int_config("Ergebnis direkt in HisQis-Datei schreiben? [1 = ja, 0 = nein / Kopie anlegen]", [0,1], config_item=config.get("in_hisqis_datei_schreiben"))
     if do_target == 0:
         last_dot = hq_file.rfind('.')
@@ -369,7 +396,7 @@ if __name__ == '__main__':
             if last_target_file is None:
                 last_target_file = target_file
 
-
+            print("\n")
             target_file = save_file_selector(text="Bitte Speicherziel für Upload-Datei auswählen",
                                              file_or_folder=last_target_file,
                                              gui=use_file_picker,
@@ -431,21 +458,19 @@ if __name__ == '__main__':
 
     target_wb.save(target_file)
 
-    print("\n" + "FERTIG!")
+    clear_console()
+    print("\n" + "FERTIG!\n")
     print("Sie können die Datei \"" + target_file + "\" jetzt auf HisQis hochladen.")
     print("Bitte kontrollieren Sie zuvor leere Zellen, die nicht gefüllt werden konnten; diese sind in gelb hervorgehoben")
     print("\n")
 
     do_open_file = get_input_int_config("Datei zur Kontrolle öffnen? [1 = ja, 0 = nein]", [0, 1], config_item=config.get("ziel_datei_oeffnen"))
 
-    try:
-        write_cache(cache, default_cache_file)
-    except Exception as e:
-        #couldn't write cache file (most likely due to permission problems, but not dramatic
-        pass
+    write_cache(cache, default_cache_file)
 
     if do_open_file == 1:
         os.startfile(os.path.normpath(target_file))
-    pass
+
+    clear_console(reprint_title=False)
 
 
