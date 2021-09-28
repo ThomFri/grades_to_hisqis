@@ -159,7 +159,7 @@ if __name__ == '__main__':
     own_df = pandas.read_excel(own_file, header=None, sheet_name=own_wb_sheet_name)
 
     clear_console()
-    print(own_df.head(10))
+    print(own_df.head(17))
 
     print("\n")
     skip_rows_own = get_input_int_config("In welcher Zeilenzahl (links) befindet sich der Tabellenkopf in der oben angezeigten Tabelle?", config_item=config.get("eigene_zeilen_ueberspringen"))
@@ -466,7 +466,11 @@ if __name__ == '__main__':
 
     do_open_file = get_input_int_config("Datei zur Kontrolle öffnen? [1 = ja, 0 = nein]", [0, 1], config_item=config.get("ziel_datei_oeffnen"))
 
-    write_cache(cache, default_cache_file)
+    try:
+        write_cache(cache, default_cache_file)
+    except Exception as e:
+        # couldn't write cache file (most likely due to permission problems, but not dramatic
+        pass
 
     if do_open_file == 1:
         os.startfile(os.path.normpath(target_file))
