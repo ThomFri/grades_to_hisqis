@@ -1,4 +1,6 @@
+/.idea/
 /testfiles/
 /venv/
 /config.json
 /cache.json
+/build/
