@@ -1,4 +1,4 @@
-![](icon.ico)
+![](doc/icon.ico)
 
 # grades_to_hisqis
 
