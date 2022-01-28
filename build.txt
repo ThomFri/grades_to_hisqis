@@ -1,1 +1,1 @@
-cxfreeze main.py --compress -O --target-dir "build\grades_to_hisqis.v1.1.1" --packages="xlwt" --include-files="configTemplate.json,README.md,README.html,doc" --target-name="grades_to_hisqis" --icon="doc\icon.ico"
+cxfreeze main.py --compress -O --target-dir "build\grades_to_hisqis.v1.1.2" --packages="xlwt" --include-files="configTemplate.json,README.html,doc" --target-name="_grades_to_hisqis" --icon="doc\icon.ico"
