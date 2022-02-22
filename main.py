@@ -20,22 +20,31 @@ from enum import Enum
 # headers etc.
 from python_modules.cache import read_cache, write_cache
 from python_modules.config import read_config_sys_argv
+from python_modules.file import get_extension, file_convert
 from python_modules.input import get_input_int_config, file_selector_config, get_input_config
 from python_modules.output import list_to_string_with_leading_index, print_program_title, save_file_selector
 
 
 class Hdrs(Enum):
-    MNR = "mtknr"
-    ABS = "abschl"
-    STG = "stg"
-    NNA = "nachname"
-    VNA = "vorname"
-    BEW = "bewertung"
-    PDA = "pdatum"
-    RES = "res1"
-    PST = "pstatus"
-    POR = "pordnr"
-    LNR = "labnr"
+    LNR = "Examplan.id"
+    POR = "PrüfungsNr."
+    PTI = "Titel"
+    NNA = "Nachname"
+    VNA = "Vorname"
+    MNR = "Matrikelnummer"
+    BEW = "Leistung"
+    VRS = "Versuch"
+    PST = "Status"
+    BNS = "Bonus"
+    SEM = "Semester"
+    JHR = "Jahr"
+    PPR = "Prüfungsperiode"
+    VMR = "Vermerk"
+    THM = "Thema"
+    PDA = "Beginn"
+    ENG = "Gepl. Ende"
+    ENT = "Tatsächl. Ende"
+
 
 class Grd(Enum):
     NAN = "NAN"
@@ -48,16 +57,31 @@ class Edg(Enum):
 key = Hdrs.MNR
 req_cols = {
         Hdrs.MNR: {
-            "name": "mtknr",
+            "name": "Matrikelnummer",
             "nameNice": "Matrikelnummer"
         },
         Hdrs.BEW: {
-            "name": "bewertung",
+            "name": "Leistung",
             "nameNice": "Bewertung/Note"
         },
+        Hdrs.THM: {
+            "name": "Thema",
+            "nameNice": "Thema",
+            "special": "col/fixed"
+        },
         Hdrs.PDA: {
-            "name": "pdatum",
+            "name": "Beginn",
             "nameNice": "Prüfungsdatum",
+            "special": "col/fixed"
+        },
+        Hdrs.ENG: {
+            "name": "Gepl. Ende",
+            "nameNice": "Geplantes Ende",
+            "special": "col/fixed"
+        },
+        Hdrs.ENT: {
+            "name": "Tatsächl. Ende",
+            "nameNice": "Tatsächliches Ende",
             "special": "col/fixed"
         }
     }
@@ -113,11 +137,33 @@ if __name__ == '__main__':
     cache = read_cache(cache_file=default_cache_file)
 
     clear_console()
-    hq_file = file_selector_config("Bitte von HisQis heruntergeladene Export-Datei (XLS) auswählen",
+    last_hq_dir = None
+    if "last_hq_file" in cache and not cache["last_hq_file"] is None:
+        last_hq_dir = os.path.join(os.path.dirname(cache.get("last_hq_file")), "*")
+
+    hq_file = file_selector_config("Bitte von HisQis heruntergeladene Export-Datei (XLS / XLSX) auswählen",
                                    config_item=config.get("hisqis_datei"),
-                                   path=cache.get("last_hq_file"))
+                                   path=last_hq_dir)
     cache["last_hq_file"] = hq_file
     print("\n")
+
+    input_file_extension = get_extension(hq_file)
+
+    if input_file_extension == "xlsx":
+        print("Datei muss von XLSX nach XLS konvertiert werden. Bitte warten...")
+        destination = hq_file[:-1]
+
+        try:
+            file_convert(hq_file, destination, "xlsx", "xls", override=True, verbose=0)
+        except Exception as e:
+            print(f'Datei konnte nicht konvertiert werden! Stellen Sie sicher, dass Sie die Datei {hq_file} (bzw. .xls) nicht geöffnet haben!')
+            print("Programm muss geschlossen werden!")
+            input("<<ENTER-Taste drücken um Programm zu schließen>>")
+            exit(-1)
+
+        hq_file = destination
+
+
     hq_wb = open_workbook(hq_file)
     tab_corners = {}
     tab_corners["start"] = find_in_workbook(hq_wb, Edg.START.value, skiprows=0)
@@ -138,6 +184,7 @@ if __name__ == '__main__':
         hq_df.set_index([hq_index_col])
 
     hq_matrnr_set = set(hq_df[hq_index_col])
+
 
     clear_console()
     own_file = file_selector_config("Bitte eigene Datei auswählen", show_files=False,
@@ -429,7 +476,7 @@ if __name__ == '__main__':
     row_i += 1
 
     all_cols = list(merged_dataframe.columns)
-    to_ignore_nans = [Hdrs.RES.value]
+    to_ignore_nans = [] #Hdrs.RES.value
     to_ignore_col_indexes = []
 
     for to_ignore_nan in to_ignore_nans:
@@ -457,6 +504,28 @@ if __name__ == '__main__':
     target_sheet.write(real_end_row, real_end_col, Edg.END.value)
 
     target_wb.save(target_file)
+
+    if input_file_extension == "xlsx":
+        print("Datei muss von XLS nach XLSX konvertiert werden. Bitte warten...")
+        destination = target_file + "x"
+        try:
+            file_convert(target_file, destination, "xls", "xlsx", override=True, verbose=0)
+        except Exception as e:
+            print(f'Datei konnte nicht konvertiert werden! Stellen Sie sicher, dass Sie die Datei {target_file} (bzw. .xlsx) nicht geöffnet haben!')
+            print("Programm muss geschlossen werden!")
+            input("<<ENTER-Taste drücken um Programm zu schließen>>")
+            exit(-1)
+
+        if True:
+            # remove conversion-only files...
+            for temp_file in [hq_file, target_file]:
+                try:
+                    os.remove(temp_file)
+                except Exception as e:
+                    print(f'Konnte temporäre Datei {temp_file} nicht entfernen.')
+
+        target_file = destination
+
 
     clear_console()
     print("\n" + "FERTIG!\n")
