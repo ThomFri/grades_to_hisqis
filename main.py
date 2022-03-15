@@ -39,7 +39,7 @@ class Hdrs(Enum):
 
 class Grd(Enum):
     NAN = "NAN"
-    KAN = "KAN"
+    KNA = "KNA"
 
 class Edg(Enum):
     START = "startHISsheet"
@@ -358,7 +358,7 @@ if __name__ == '__main__':
         bewertung_options = [
             "Ignorieren",
             "Durch \""+Grd.NAN.value+"\" ersetzen",
-            "Durch \""+Grd.KAN.value+"\" ersetzen"
+            "Durch \""+Grd.KNA.value+"\" ersetzen"
         ]
 
         clear_console()
@@ -372,7 +372,7 @@ if __name__ == '__main__':
         if do_bewertung == 1:
             merged_dataframe[Hdrs.BEW.value].replace(np.nan, Grd.NAN.value, regex=True, inplace=True)
         elif do_bewertung == 2:
-            merged_dataframe[Hdrs.BEW.value].replace(np.nan, Grd.KAN.value, regex=True, inplace=True)
+            merged_dataframe[Hdrs.BEW.value].replace(np.nan, Grd.KNA.value, regex=True, inplace=True)
 
     merged_dataframe[Hdrs.PDA.value] = merged_dataframe[Hdrs.PDA.value].apply(
         lambda x: dateutil.parser.parse(str(x), dayfirst=True, yearfirst=False).strftime("%d.%m.%Y")
