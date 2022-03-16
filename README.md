@@ -10,7 +10,7 @@ Kann die Noten aus einer eigens erstellten Excel-Tabelle in den Export von HisQi
 
 ## Anleitung
 1. Zuerst auf HisQis anmelden, die Prüfung auswählen und auf der Seite in der die Tabelle angezeigt wird ganz nach unten Scrollen und den Button `[Excel-Export` drücken
-  Es sollte eine Datei mit dem Namensschema `prf_XXXXXX_XXXXX_1.xls` herunterladen werden; Diese Datei ist die im Programm als ***HisQis-Datei*** bezeichnete Datei
+    Es sollte eine Datei mit dem Namensschema `prf_XXXXXX_XXXXX_1.xls` herunterladen werden; Diese Datei ist die im Programm als ***HisQis-Datei*** bezeichnete Datei
 
   
 
@@ -258,12 +258,12 @@ Kann die Noten aus einer eigens erstellten Excel-Tabelle in den Export von HisQi
     Bewertung/Note-Spalte (in HisQis: "bewertung") enthälte leere Werte! Wie soll mit diesen verfahren werden?
     0	Ignorieren
     1	Durch "NAN" ersetzen
-    2	Durch "KAN" ersetzen 
+    2	Durch "KNA" ersetzen 
     ```
 
     Im Beispiel oben wurde dies normalerweise durch die Matr.-Nr. *46802* ausgelöst, die wie oben beschrieben ein *NaN* (= leere Zelle) aufweist.
 
-    Dies können Sie direkt als 1 *NaN* = *nicht angetreten* oder 2 *KAN* = *Nicht gezählter Antrittsversuch wegen Corona* füllen lassen, **empfiehlt sich aber, dies zu ignorieren** und **0** zu wählen (kontrollieren Sie dann am besten die Upload-Datei noch ganz zum Schluss, leere Zellen sind in dieser gelb markiert.)
+    Dies können Sie direkt als 1 *NaN* = *nicht angetreten* oder 2 *KNA* = *Nicht gezählter Antrittsversuch wegen Corona* füllen lassen, **empfiehlt sich aber, dies zu ignorieren** und **0** zu wählen (kontrollieren Sie dann am besten die Upload-Datei noch ganz zum Schluss, leere Zellen sind in dieser gelb markiert.)
 
     
 
